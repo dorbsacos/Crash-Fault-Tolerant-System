@@ -1,0 +1,127 @@
+# Multi Paxos Banking System
+
+A Python implementation of a Stable‑Leader Paxos consensus protocol (“Multi‑Paxos”-style) powering a fault‑tolerant replicated banking app. The system runs 5 nodes (2f+1 with f=2) and 10 clients, reaches consensus on a total order of transactions, and continues operating under leader/backup failures.
+
+> Built for Distributed Systems and extended with practical tooling for testing.
+
+---
+
+## Features
+
+- Stable‑Leader Paxos: single prepare phase amortized across many accepts; per‑request sequence numbers.
+- Exactly‑once semantics: client timestamps and reply tracking.
+- Failure handling: backup failures tolerated; leader failure triggers election and log recovery via `NEW_VIEW`.
+- Out‑of‑order proposal: leader can pipeline accepts without waiting on previous acks.
+- Structured logging & introspection:
+  - `PrintLog` – message history per node
+  - `PrintDB` – balances
+  - `PrintStatus(seq)` – status across nodes: `A`(Accepted), `C`(Committed), `E`(Executed), `X`(No Status)
+  - `PrintView` – all `NEW_VIEW` messages
+- CSV‑driven test runner with interactive checkpoints and leader‑failure injection (`LF`).
+- Clean TCP + JSON message transport (no shared memory), multi‑process nodes & client manager.
+
+---
+
+## Architecture Overview
+
+Processes
+- `main.py` spawns 5 node processes (`PaxosNode`) and a client manager (`ClientManager`).
+- Control and response queues are used for orchestration/testing; inter‑node traffic is over TCP sockets.
+
+Core Components
+- `node.py` — Leader election (prepare/promise), normal ops (accept/accepted/commit), `NEW_VIEW` recovery, heartbeats, quiet‑period election suppression, accept quorum tracking, commit/execution.
+- `client.py` — 10 logical clients, per‑client timers, resend on timeout, reply de‑dup via timestamps.
+- `message.py` — Message schema/builders + (de)serialization.
+- `database.py` — In‑memory KV store for balances (with `"no-op"` handling).
+- `log.py` — Per‑node request log, status, AcceptLog aggregation for `NEW_VIEW`.
+- `config.py` — Ports, timeouts, quorum/IDs, client timing, heartbeat and quiet‑period tunables.
+- `utils.py` — Ballot compare, AcceptLog merge, formatting, time utilities.
+
+Message Types
+`PREPARE`, `PROMISE`, `ACCEPT`, `ACCEPTED`, `COMMIT`, `NEW_VIEW`, `REQUEST`, `REPLY`, `HEARTBEAT` (JSON over TCP).
+
+---
+
+## Repository Structure
+
+```
+cft-dorbsacos/
+├─ main.py            # Entry point: manual mode or CSV test runner
+├─ node.py            # Paxos node (leader election + normal operation)
+├─ client.py          # Client manager, timers, resend, reply handling
+├─ message.py         # Message builders/types and JSON serde
+├─ database.py        # Simple balances KV; executes transactions & no-ops
+├─ log.py             # Request log; PrintLog/PrintStatus/PrintView helpers
+├─ config.py          # System config: ports, timeouts, node IDs, constants
+├─ utils.py           # Ballots, AcceptLog merge, timestamps, formatting
+└─ Testcases.csv      # Example test cases
+```
+
+# Stable-Leader Paxos Banking System
+
+A compact Python implementation of a Stable-Leader Paxos multi-instance system for a replicated banking application. The system runs multiple node processes and a client manager to reach consensus on transaction order and tolerate node failures.
+
+## Purpose
+
+Project to demonstrate leader-based Paxos (multi-Paxos), log replication, and simple failure injections for testing.
+
+## Files
+
+The repository contains the main scripts used to run and test the system:
+
+- `main.py`       - entry point and test runner
+- `node.py`       - Paxos node implementation
+- `client.py`     - client manager and retry logic
+- `message.py`    - message types and serialization
+- `database.py`   - in-memory balances store
+- `log.py`        - per-node request log and helpers
+- `config.py`     - ports, timeouts, and tunables
+- `utils.py`      - helper utilities
+- `Testcases.csv` - CSV test file (if present)
+
+## Requirements
+
+- Python 3.10 or newer
+- No third-party packages required
+
+## Running
+
+Manual mode (start nodes interactively):
+
+```powershell
+python main.py
+```
+
+CSV-driven test runner:
+
+```powershell
+python main.py Testcases.csv
+```
+
+The runner reads sets from the CSV and pauses between sets to allow interactive inspection.
+
+## CSV format
+
+CSV columns:
+- Set Number (integer)
+- Transactions (either a transaction tuple or `LF` for leader failure)
+- Live Nodes (list of node ids to simulate connected nodes)
+
+Example rows:
+
+```
+Set Number,Transactions,Live Nodes
+1,(A,C,5),[n1,n2,n3,n4,n5]
+1,LF,[n1,n2,n3,n4,n5]
+2,(A,E,4),[n1,n3,n5]
+```
+
+`LF` instructs the runner to disconnect the current leader, allow re-election, and then continue.
+
+## Interactive commands (available between CSV sets)
+
+- `printdb <nodeId>`   - show balances on a node
+- `printlog <nodeId>`  - show node's request log
+- `printstatus <nodeId>` - prompt for a sequence number and show status
+- `printview <nodeId>` - list NEW_VIEW messages seen
+- `next`               - continue to the next set
