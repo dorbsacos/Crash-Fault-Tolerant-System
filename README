@@ -2,11 +2,9 @@
 
 A Python implementation of a Stable‑Leader Paxos consensus protocol (“Multi‑Paxos”-style) powering a fault‑tolerant replicated banking app. The system runs 5 nodes (2f+1 with f=2) and 10 clients, reaches consensus on a total order of transactions, and continues operating under leader/backup failures.
 
-> Built for Distributed Systems and extended with practical tooling for testing.
-
 ---
 
-## Features
+# Features
 
 - Stable‑Leader Paxos: single prepare phase amortized across many accepts; per‑request sequence numbers.
 - Exactly‑once semantics: client timestamps and reply tracking.
@@ -22,11 +20,11 @@ A Python implementation of a Stable‑Leader Paxos consensus protocol (“Multi�
 
 ---
 
-## Architecture Overview
+# Architecture Overview
 
 Processes
 - `main.py` spawns 5 node processes (`PaxosNode`) and a client manager (`ClientManager`).
-- Control and response queues are used for orchestration/testing; inter‑node traffic is over TCP sockets.
+- Control and response queues are used for testing; inter‑node traffic is over TCP sockets.
 
 Core Components
 - `node.py` — Leader election (prepare/promise), normal ops (accept/accepted/commit), `NEW_VIEW` recovery, heartbeats, quiet‑period election suppression, accept quorum tracking, commit/execution.
@@ -42,11 +40,11 @@ Message Types
 
 ---
 
-## Repository Structure
+# Repository Structure
 
 ```
-cft-dorbsacos/
-├─ main.py            # Entry point: manual mode or CSV test runner
+Crash-Fault-Tolerant-System/
+├─ main.py            # Entry point
 ├─ node.py            # Paxos node (leader election + normal operation)
 ├─ client.py          # Client manager, timers, resend, reply handling
 ├─ message.py         # Message builders/types and JSON serde
@@ -61,11 +59,11 @@ cft-dorbsacos/
 
 A compact Python implementation of a Stable-Leader Paxos multi-instance system for a replicated banking application. The system runs multiple node processes and a client manager to reach consensus on transaction order and tolerate node failures.
 
-## Purpose
+# Purpose
 
 Project to demonstrate leader-based Paxos (multi-Paxos), log replication, and simple failure injections for testing.
 
-## Files
+# Files
 
 The repository contains the main scripts used to run and test the system:
 
@@ -77,14 +75,14 @@ The repository contains the main scripts used to run and test the system:
 - `log.py`        - per-node request log and helpers
 - `config.py`     - ports, timeouts, and tunables
 - `utils.py`      - helper utilities
-- `Testcases.csv` - CSV test file (if present)
+- `Testcases.csv` - CSV test file
 
-## Requirements
+# Requirements
 
 - Python 3.10 or newer
 - No third-party packages required
 
-## Running
+# Running
 
 Manual mode (start nodes interactively):
 
@@ -100,7 +98,7 @@ python main.py Testcases.csv
 
 The runner reads sets from the CSV and pauses between sets to allow interactive inspection.
 
-## CSV format
+# CSV format
 
 CSV columns:
 - Set Number (integer)
@@ -118,7 +116,7 @@ Set Number,Transactions,Live Nodes
 
 `LF` instructs the runner to disconnect the current leader, allow re-election, and then continue.
 
-## Interactive commands (available between CSV sets)
+# Interactive commands (available between CSV sets)
 
 - `printdb <nodeId>`   - show balances on a node
 - `printlog <nodeId>`  - show node's request log
